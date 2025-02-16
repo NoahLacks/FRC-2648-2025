@@ -1,0 +1,29 @@
+CAN
+----------------------------
+ARM
+kArmMotorID = 0
+kCANcoderID = 0
+
+CLIMBER
+kPivotMotorID = 0
+kRollerMotorID = 0
+
+DRIVEBASE
+kFrontLeftDrivingCanId = 11
+kRearLeftDrivingCanId = 13
+kFrontRightDrivingCanId = 15
+kRearRightDrivingCanId = 17
+kFrontLeftTurningCanId = 10
+kRearLeftTurningCanId = 12
+kFrontRightTurningCanId = 14
+kRearRightTurningCanId = 16
+
+ELEVATOR
+kElevatorMotorID = 0
+
+MANIPULATOR
+kManipulatorMotorID = 0
+
+PWM
+----------------------------
+
