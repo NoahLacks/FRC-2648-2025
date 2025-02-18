@@ -4,42 +4,48 @@ import com.revrobotics.spark.SparkMax;
 
 import java.util.function.DoubleSupplier;
 
-import com.revrobotics.spark.ClosedLoopSlot;
 import com.revrobotics.spark.SparkAbsoluteEncoder;
-import com.revrobotics.spark.SparkBase;
 import com.revrobotics.spark.SparkBase.PersistMode;
 import com.revrobotics.spark.SparkBase.ResetMode;
-import com.revrobotics.spark.SparkClosedLoopController;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.ArmFeedforward;
+import edu.wpi.first.math.controller.ProfiledPIDController;
+import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.ManipulatorPivotConstants;
 
 public class ManipulatorPivot extends SubsystemBase {
-    protected SparkMax armMotor;
+    protected SparkMax pivotMotor;
+
+    private SparkAbsoluteEncoder encoder;
 
     private ArmFeedforward feedForward;
 
-    private SparkClosedLoopController pivotClosedLoopController;
-    private SparkAbsoluteEncoder absoluteEncoder;
+    private ProfiledPIDController pidController;
 
     public ManipulatorPivot() {
-        armMotor = new SparkMax(
-            ManipulatorPivotConstants.kArmMotorID, 
+        pivotMotor = new SparkMax(
+            ManipulatorPivotConstants.kPivotMotorID, 
             MotorType.kBrushless
         );
 
-        armMotor.configure(
+        pivotMotor.configure(
             ManipulatorPivotConstants.motorConfig, 
             ResetMode.kResetSafeParameters, 
             PersistMode.kPersistParameters
         );
+        
+        encoder = pivotMotor.getAbsoluteEncoder();
 
-        pivotClosedLoopController = armMotor.getClosedLoopController();
-        absoluteEncoder = armMotor.getAbsoluteEncoder();
+        pidController = new ProfiledPIDController(
+            ManipulatorPivotConstants.kPositionalP, 
+            ManipulatorPivotConstants.kPositionalI, 
+            ManipulatorPivotConstants.kPositionalD, 
+            new TrapezoidProfile.Constraints(ManipulatorPivotConstants.kMaxVelocity, ManipulatorPivotConstants.kMaxAcceleration)
+        );
         
         feedForward = new ArmFeedforward(
             ManipulatorPivotConstants.kFeedForwardS,
@@ -66,12 +72,18 @@ public class ManipulatorPivot extends SubsystemBase {
      * @return Is the motion safe
      */
     public boolean isMotionSafe(double motionTarget) {
-        return motionTarget > ManipulatorPivotConstants.kArmSafeStowPosition;
+        return motionTarget > ManipulatorPivotConstants.kPivotSafeStowPosition;
     }
 
-    public Command setSpeed(DoubleSupplier speed) {
+    /**
+     * Manual ManipulatorPivot command that sets the motor based on speed
+     * 
+     * @param speed The speed to set the motor
+     * @return A command that sets the motor speed
+     */
+    public Command runManualPivot(DoubleSupplier speed) {
         return run(() -> {
-            armMotor.set(speed.getAsDouble());
+            pivotMotor.set(speed.getAsDouble());
         });
     }
     
@@ -90,27 +102,34 @@ public class ManipulatorPivot extends SubsystemBase {
         );
 
         return run(() -> {
-            pivotClosedLoopController.setReference(clampedSetpoint,
-                SparkBase.ControlType.kMAXMotionPositionControl,
-                ClosedLoopSlot.kSlot1,
-                feedForward.calculate(absoluteEncoder.getPosition() + ManipulatorPivotConstants.kFFGravityOffset, absoluteEncoder.getVelocity()));
+            pidController.reset(encoder.getPosition(), encoder.getVelocity());
+
+            pivotMotor.setVoltage(
+                pidController.calculate(
+                    encoder.getPosition(), 
+                    clampedSetpoint
+                ) + feedForward.calculate(
+                    encoder.getPosition(), 
+                    0
+                )
+            );
         });
     }
 
     /**
-     * Returns the CANCoder's position in radians
+     * Returns the encoder's position in radians
      * 
-     * @return CANCoder's position in radians
+     * @return Encoder's position in radians
      */
     public double getEncoderPosition() {
-        return absoluteEncoder.getPosition();
+        return encoder.getPosition();
     }
     /**
-     * Returns the CANCoder's velocity in radians per second
+     * Returns the encoder's velocity in radians per second
      * 
-     * @return CANCoder's velocity in radians per second
+     * @return Encoder's velocity in radians per second
      */
     public double getEncoderVelocity() {
-        return absoluteEncoder.getVelocity();
+        return encoder.getVelocity();
     }
 }

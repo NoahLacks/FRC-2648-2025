@@ -9,19 +9,20 @@ import frc.robot.constants.ClimberPivotConstants;
 import frc.robot.constants.ElevatorConstants;
 import frc.robot.constants.OIConstants;
 import frc.robot.subsystems.ManipulatorPivot;
-import frc.robot.subsystems.sysid.ElevatorSysID;
+import frc.robot.subsystems.Vision;
 import frc.robot.subsystems.ClimberPivot;
 import frc.robot.subsystems.ClimberRollers;
 import frc.robot.subsystems.Drivetrain;
 import frc.robot.subsystems.Elevator;
 import frc.robot.subsystems.Manipulator;
 
-import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
-
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
@@ -48,12 +49,14 @@ public class RobotContainer {
 	private CommandXboxController operator;
 
 	private SendableChooser<Command> autoChooser;
+	private Vision vision;
 
 	public RobotContainer() {
 		climberPivot = new ClimberPivot();
 
 		climberRollers = new ClimberRollers();
 
+		//vision = new Vision(drivetrain::getGyroValue);
 		drivetrain = new Drivetrain();
 
 		elevator = new Elevator();
@@ -112,7 +115,7 @@ public class RobotContainer {
 
 		
 		manipulatorPivot.setDefaultCommand(
-			manipulatorPivot.setSpeed(
+			manipulatorPivot.runManualPivot(
 				() -> 0
 			)
 		);
@@ -150,12 +153,14 @@ public class RobotContainer {
 		*/
 
 		operator.povUp().onTrue(
-			elevator.goToSetpoint(() -> 20)
+			elevator.goToSetpoint(() -> 20).until(elevator::eitherAtGoal)
 		);
 
 		operator.povDown().onTrue(
-			elevator.goToSetpoint(() -> 0)
+			elevator.goToSetpoint(() -> 0).until(elevator::eitherAtGoal)
 		);
+
+		operator.a().whileTrue(elevator.maintainPosition());
 
 		/*
 		operator.a().whileTrue(elevator.runManualElevator(() -> 0.2));
@@ -256,7 +261,7 @@ public class RobotContainer {
 		sensorTab.addDouble("ElevMotor1", elevator::getMotor1);
 
 		sensorTab.addDouble("ElevMotor2", elevator::getMotor2);
-  }
+ 	}
 
 	public Command getAutonomousCommand() {
 		return autoChooser.getSelected();
@@ -305,7 +310,7 @@ public class RobotContainer {
 		// If the target position is behind the brace, and the arm is not behind the brace, move the arm to a safe position first,
 		// then the elevator, then the arm again
 		} else if (!manipulatorPivot.isMotionSafe(armPosition) && !manipulatorPivot.isMotionSafe()) { 
-			return moveManipulatorUtil(elevatorPosition, ManipulatorPivotConstants.kArmSafeStowPosition, false, true)
+			return moveManipulatorUtil(elevatorPosition, ManipulatorPivotConstants.kPivotSafeStowPosition, false, true)
 				.andThen(manipulatorPivot.goToSetpoint(armPosition));
 		// If the target position is behind the brace, and the arm is behind the brace, move the elevator first, then the arm
 		} else if (!manipulatorPivot.isMotionSafe(armPosition) && manipulatorPivot.isMotionSafe()) {
@@ -315,7 +320,7 @@ public class RobotContainer {
 			return moveManipulatorUtil(elevatorPosition, armPosition, false, true);
 		// Catch all command that's safe regardless of arm and elevator positions
 		} else { 
-			return moveManipulatorUtil(elevatorPosition, ManipulatorPivotConstants.kArmSafeStowPosition, false, true)
+			return moveManipulatorUtil(elevatorPosition, ManipulatorPivotConstants.kPivotSafeStowPosition, false, true)
 				.andThen(manipulatorPivot.goToSetpoint(armPosition));
 		}
 	}
@@ -357,13 +362,13 @@ public class RobotContainer {
 	private Command manipulatorSafeTravel(double elevatorPosition, double armPosition, boolean isL4){
 		if(!isL4){
 			return Commands.sequence(
-				manipulatorPivot.goToSetpoint(ManipulatorPivotConstants.kArmSafeStowPosition),
+				manipulatorPivot.goToSetpoint(ManipulatorPivotConstants.kPivotSafeStowPosition),
 				elevator.goToSetpoint(() -> elevatorPosition),
 				manipulatorPivot.goToSetpoint(armPosition));
 			
 		}else{
 			return Commands.sequence(
-				manipulatorPivot.goToSetpoint(ManipulatorPivotConstants.kArmSafeStowPosition),
+				manipulatorPivot.goToSetpoint(ManipulatorPivotConstants.kPivotSafeStowPosition),
 				elevator.goToSetpoint(() -> elevatorPosition).until(() -> elevator.getEncoderPosition() > ElevatorConstants.kL4TransitionPosition),
 				Commands.parallel( manipulatorPivot.goToSetpoint(armPosition)), elevator.goToSetpoint(() -> elevatorPosition));
 		}
@@ -379,7 +384,7 @@ public class RobotContainer {
 	 */
 	@SuppressWarnings("unused")
 	private Command safeMoveManipulator(double elevatorPosition, double armPosition) {
-		return moveManipulatorUtil(elevatorPosition, ManipulatorPivotConstants.kArmSafeStowPosition, false, true)
+		return moveManipulatorUtil(elevatorPosition, ManipulatorPivotConstants.kPivotSafeStowPosition, false, true)
 			.andThen(manipulatorPivot.goToSetpoint(armPosition));
 	}
 

@@ -74,7 +74,6 @@ public class Vision{
     }
 
     public Pose2d getBlackGlobalPose(){
-        
         return relativeToGlobalPose2d(getBlackClosestTag(), 
             new Translation2d(getBlackRelativeX(), getBlackRelativeY()), 
             new Rotation2d(gyroAngle.getAsDouble()));
@@ -109,9 +108,8 @@ public class Vision{
     }
 
     public Pose2d getOrangeGlobalPose(){
-        
-        return relativeToGlobalPose2d(getBlackClosestTag(), 
-            new Translation2d(getBlackRelativeX(), getBlackRelativeY()), 
+        return relativeToGlobalPose2d(getOrangeClosestTag(), 
+            new Translation2d(getOrangeRelativeX(), getOrangeRelativeY()), 
             new Rotation2d(gyroAngle.getAsDouble()));
     }
     

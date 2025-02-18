@@ -7,7 +7,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Start to 60 Right"
+            "pathName": "Start to 30 Right"
           }
         },
         {
@@ -19,7 +19,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": "60 Right to HP"
+            "pathName": "30 Right to HP"
           }
         },
         {
@@ -31,7 +31,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": "HP to 300 Left"
+            "pathName": "HP to 330 Left"
           }
         },
         {

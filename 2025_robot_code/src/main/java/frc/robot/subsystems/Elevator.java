@@ -3,18 +3,13 @@ package frc.robot.subsystems;
 import java.util.function.DoubleSupplier;
 
 import com.revrobotics.RelativeEncoder;
-import com.revrobotics.spark.ClosedLoopSlot;
-import com.revrobotics.spark.SparkBase;
-import com.revrobotics.spark.SparkClosedLoopController;
 import com.revrobotics.spark.SparkMax;
-import com.revrobotics.spark.SparkBase.ControlType;
 import com.revrobotics.spark.SparkBase.PersistMode;
 import com.revrobotics.spark.SparkBase.ResetMode;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.ElevatorFeedforward;
-import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.wpilibj.DigitalInput;
@@ -26,13 +21,12 @@ public class Elevator extends SubsystemBase {
     protected SparkMax elevatorMotor1;
     protected SparkMax elevatorMotor2;
 
-    //private SparkClosedLoopController elevatorClosedLoop;
-
     protected RelativeEncoder encoder;
 
     private DigitalInput bottomLimitSwitch;
 
-    private ProfiledPIDController pidController;
+    private ProfiledPIDController pidControllerUp;
+    private ProfiledPIDController pidControllerDown;
 
     private ElevatorFeedforward feedForward;
     
@@ -67,16 +61,28 @@ public class Elevator extends SubsystemBase {
             ElevatorConstants.kBottomLimitSwitchID
         );
 
-        pidController = new ProfiledPIDController(
-            ElevatorConstants.kPositionControllerP, 
-            ElevatorConstants.kPositionControllerI,
-            ElevatorConstants.kPositionControllerD,
+        pidControllerUp = new ProfiledPIDController(
+            ElevatorConstants.kUpControllerP, 
+            ElevatorConstants.kUpControllerI,
+            ElevatorConstants.kUpControllerD,
             new TrapezoidProfile.Constraints(
                 ElevatorConstants.kMaxVelocity, 
                 ElevatorConstants.kMaxAcceleration
             )
         );
-        pidController.setTolerance(ElevatorConstants.kAllowedError);
+
+        pidControllerDown = new ProfiledPIDController(
+            ElevatorConstants.kDownControllerP, 
+            ElevatorConstants.kDownControllerI,
+            ElevatorConstants.kDownControllerD,
+            new TrapezoidProfile.Constraints(
+                ElevatorConstants.kMaxVelocity, 
+                ElevatorConstants.kMaxAcceleration
+            )
+        );
+
+        pidControllerUp.setTolerance(ElevatorConstants.kAllowedError);
+        pidControllerDown.setTolerance(ElevatorConstants.kAllowedError);
 
         feedForward = new ElevatorFeedforward(
             ElevatorConstants.kFeedForwardS, 
@@ -121,16 +127,33 @@ public class Elevator extends SubsystemBase {
      */
     public Command runManualElevator(DoubleSupplier speed) {
         return run(() -> {
-            elevatorMotor1.set(
-                speed.getAsDouble()
-            );
+            double desired = speed.getAsDouble();
+
+            if(Math.abs(MathUtil.applyDeadband(desired, .05)) > 0) {
+                elevatorMotor1.set(
+                    speed.getAsDouble()
+                );
+            } else {
+                elevatorMotor1.setVoltage(feedForward.calculate(0));
+            }
+            
         });
     }
 
+    /**
+     * A command that will use the feed forward to hold up the elevator.
+     * Used for feed forward tuning.
+     * 
+     * @return Sets motor voltage based on feed forward calculation.
+     */
     public Command maintainPosition() {
         return run(() -> {
             elevatorMotor1.setVoltage(feedForward.calculate(0));
         });
+    }
+
+    public boolean eitherAtGoal() {
+        return pidControllerUp.atGoal() || pidControllerDown.atGoal();
     }
 
     /**
@@ -148,29 +171,35 @@ public class Elevator extends SubsystemBase {
         );
 
         return run(() -> {
-            /* 
-            if(pidController.atGoal()) {
-                elevatorMotor1.setVoltage(feedForward.calculate(0));
-            } else {
-*/
-                elevatorMotor1.setVoltage(
-                    pidController.calculate(
-                        encoder.getPosition(),
-                        clampedSetpoint
-                    ) + feedForward.calculate(pidController.getSetpoint().velocity)
-                );
-            
-            
-            /*elevatorClosedLoop.setReference(
-                clampedSetpoint,
-                ControlType.kMAXMotionPositionControl,
-                ClosedLoopSlot.kSlot0,
-                feedForward.calculate(0)
-            );*/
+            //pidController.reset(encoder.getPosition(), encoder.getVelocity());
+            elevatorMotor1.setVoltage(
+                pidControllerUp.calculate(
+                    encoder.getPosition(),
+                    clampedSetpoint
+                ) + feedForward.calculate(pidControllerUp.getSetpoint().velocity)
+            );
             
         });
 
     }
+            
+            /* 
+            if(encoder.getPosition() >= setpoint.getAsDouble()){
+                elevatorMotor1.setVoltage(
+                    pidControllerUp.calculate(
+                        encoder.getPosition(),
+                        clampedSetpoint
+                    ) + feedForward.calculate(pidControllerUp.getSetpoint().velocity)
+                );
+            }else if(encoder.getPosition() <= setpoint.getAsDouble()){
+                elevatorMotor1.setVoltage(
+                    pidControllerDown.calculate(
+                        encoder.getPosition(),
+                        clampedSetpoint
+                    ) + feedForward.calculate(pidControllerDown.getSetpoint().velocity)
+                );
+            }
+                */
 
     /**
      * Returns the current encoder position
@@ -191,11 +220,21 @@ public class Elevator extends SubsystemBase {
         return bottomLimitSwitch.get();
     }
 
+    /**
+     * Returns the motor's output current
+     * 
+     * @return Motor output current
+     */
     public double getMotor1() {
-        return elevatorMotor1.getOutputCurrent();
+        return elevatorMotor1.getAppliedOutput()*elevatorMotor1.getBusVoltage();
     }
 
+    /**
+     * Returns the motor's output current
+     * 
+     * @return Motor output current
+     */
     public double getMotor2() {
-        return elevatorMotor2.getOutputCurrent();
+        return elevatorMotor2.getAppliedOutput()*elevatorMotor2.getBusVoltage();
     }
 }

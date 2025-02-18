@@ -21,6 +21,7 @@ import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.AutoConstants;
@@ -35,10 +36,12 @@ public class Drivetrain extends SubsystemBase {
     protected MAXSwerveModule m_rearRight;
 
     // The gyro sensor
-    private AHRS ahrs;
+    private AHRS gyro;
 
     // Odometry class for tracking robot pose
     private SwerveDrivePoseEstimator m_estimator;
+
+    private Vision vision;
 
     /** Creates a new DriveSubsystem. */
     public Drivetrain() {
@@ -66,11 +69,11 @@ public class Drivetrain extends SubsystemBase {
             DrivetrainConstants.kBackRightChassisAngularOffset
         );
 
-        ahrs = new AHRS(NavXComType.kMXP_SPI);
+        gyro = new AHRS(NavXComType.kMXP_SPI);
 
         m_estimator = new SwerveDrivePoseEstimator(
             DrivetrainConstants.kDriveKinematics,
-            Rotation2d.fromDegrees(ahrs.getAngle()),
+            Rotation2d.fromDegrees(gyro.getAngle()),
             new SwerveModulePosition[] {
                 m_frontLeft.getPosition(),
                 m_frontRight.getPosition(),
@@ -109,6 +112,25 @@ public class Drivetrain extends SubsystemBase {
                 m_rearLeft.getPosition(),
                 m_rearRight.getPosition()
         });
+
+
+        // if the detected tags match your alliances reef tags use their pose estimates 
+        /* 
+        if(vision.getOrangeClosestTag() >= 6 || vision.getOrangeClosestTag() <= 11 || DriverStation.getAlliance().equals(Alliance.Red)){
+            m_estimator.addVisionMeasurement(vision.getOrangeGlobalPose(), vision.getOrangeTimeStamp());
+            
+        }else if(vision.getOrangeClosestTag() >= 17 || vision.getOrangeClosestTag() <= 22 || DriverStation.getAlliance().equals(Alliance.Blue)){
+            m_estimator.addVisionMeasurement(vision.getOrangeGlobalPose(), vision.getOrangeTimeStamp());
+        }
+
+        if(vision.getBlackClosestTag() >= 6 || vision.getBlackClosestTag() <= 11 || DriverStation.getAlliance().equals(Alliance.Red)){
+            m_estimator.addVisionMeasurement(vision.getBlackGlobalPose(), vision.getBlackTimeStamp()); 
+        }else if(vision.getBlackClosestTag() >= 17 || vision.getBlackClosestTag() <= 22 || DriverStation.getAlliance().equals(Alliance.Blue)){
+            m_estimator.addVisionMeasurement(vision.getBlackGlobalPose(), vision.getBlackTimeStamp());
+        }
+        */
+        
+        
     }
 
     public ChassisSpeeds getCurrentChassisSpeeds() {
@@ -228,11 +250,11 @@ public class Drivetrain extends SubsystemBase {
 
     /** Zeroes the heading of the robot. */
     public void zeroHeading() {
-        ahrs.reset();
+        gyro.reset();
     }
 
     public double getGyroValue() {
-        return ahrs.getAngle() * (DrivetrainConstants.kGyroReversed ? -1 : 1);
+        return gyro.getAngle() * (DrivetrainConstants.kGyroReversed ? -1 : 1);
     }
 
     /**
@@ -250,7 +272,7 @@ public class Drivetrain extends SubsystemBase {
      * @return The turn rate of the robot, in degrees per second
      */
     public double getTurnRate() {
-        return ahrs.getRate() * (DrivetrainConstants.kGyroReversed ? -1.0 : 1.0);
+        return gyro.getRate() * (DrivetrainConstants.kGyroReversed ? -1.0 : 1.0);
     }
 
     public void addVisionMeasurement(Pose2d pose, double timestamp){

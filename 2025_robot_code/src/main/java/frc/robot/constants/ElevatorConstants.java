@@ -21,18 +21,22 @@ public class ElevatorConstants {
 
     public static final int kCurrentLimit = 40;
 
-    public static final double kPositionControllerP = 3; //
-    public static final double kPositionControllerI = 0;
-    public static final double kPositionControllerD = 0.1;//0.35
+    public static final double kUpControllerP = 4;//7; //
+    public static final double kUpControllerI = 0;
+    public static final double kUpControllerD = 0.35;//0.1;//0.35
+
+    public static final double kDownControllerP = 6;//7; //
+    public static final double kDownControllerI = 0;
+    public static final double kDownControllerD = 0.175;//0.1;//0.35
      
     public static final double kAllowedError = 0.75;
 
-    public static final double kFeedForwardS = 0;
-    public static final double kFeedForwardG = .7;//1; // calculated value  .6
-    public static final double kFeedForwardV = 0.12; // calculated value  .12 INCHES NOT METERS
+    public static final double kFeedForwardS = (0.95 - 0.2)/2*0.8;   /* kG too high - kG too low / 2  0.95, 0.2 */
+    public static final double kFeedForwardG = (0.95 + 0.2)/2;  /* kG too high + kG too low / 2 */    // calculated value 0.6
+    public static final double kFeedForwardV = 0.06;   // calculated value 0.12
 
-    public static final double kMaxVelocity = 120.0; // 120 inches per second (COOKING) calculated max is 184 in/s
-    public static final double kMaxAcceleration = 240; // 400 inches per second^2 (also COOKING) calculated max is 600 in/s^2
+    public static final double kMaxVelocity = 150.0;    // 120 inches per second (COOKING) calculated max is 184 in/s
+    public static final double kMaxAcceleration = 240;    // 400 inches per second^2 (also COOKING) calculated max is 600 in/s^2
 
     public static final double kCoralIntakePosition = 0;
     public static final double kL1Position = 0;

@@ -34,11 +34,11 @@ public class ManipulatorPivotSysID extends ManipulatorPivot {
         routine = new SysIdRoutine(
             ManipulatorPivotConstants.kSysIDConfig,
             new SysIdRoutine.Mechanism(
-                armMotor::setVoltage, 
+                pivotMotor::setVoltage, 
                 (log) -> {
                     log.motor("armMotor")
                         .voltage(appliedVoltage.mut_replace(
-                            armMotor.get() * RobotController.getBatteryVoltage(), Volts
+                            pivotMotor.get() * RobotController.getBatteryVoltage(), Volts
                         ))
                         .angularPosition(pivotPosition.mut_replace(
                             getEncoderPosition(), Radians
