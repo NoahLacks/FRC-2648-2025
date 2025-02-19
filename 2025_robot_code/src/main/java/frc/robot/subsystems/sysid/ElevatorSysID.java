@@ -14,16 +14,22 @@ import frc.robot.constants.ElevatorConstants;
 import frc.robot.subsystems.Elevator;
 
 public class ElevatorSysID extends Elevator {
-    private MutVoltage appliedVoltage = Volts.mutable(0);;
+    private MutVoltage appliedVoltage;
 
-    private MutDistance elevatorPosition = Inches.mutable(0);;
+    private MutDistance elevatorPosition;
 
-    private MutLinearVelocity elevatorVelocity = InchesPerSecond.mutable(0);
+    private MutLinearVelocity elevatorVelocity;
 
     private SysIdRoutine routine;
 
     public ElevatorSysID() {
         super();
+
+        appliedVoltage = Volts.mutable(0);
+
+        elevatorPosition = Inches.mutable(0);
+
+        elevatorVelocity = InchesPerSecond.mutable(0);
 
         routine = new SysIdRoutine(
             ElevatorConstants.kSysIDConfig,

@@ -17,23 +17,24 @@ public class ElevatorConstants {
     public static final int kBottomLimitSwitchID = 0;
 
     // 60/11 gearing multiplied by circumference of sprocket multiplied by 2 for carriage position
-    public static final double kEncoderConversionFactor = 11.0/60.0 * (22.0*0.25) * 2.0;
+    public static final double kEncoderPositionConversionFactor = 11.0/60.0 * (22.0*0.25) * 2.0;
+    public static final double kEncoderVelocityConversionFactor = kEncoderPositionConversionFactor / 60;
 
     public static final int kCurrentLimit = 40;
 
-    public static final double kUpControllerP = 4;//7; //
+    public static final double kUpControllerP = 5.6;//7; //
     public static final double kUpControllerI = 0;
-    public static final double kUpControllerD = 0.35;//0.1;//0.35
+    public static final double kUpControllerD = 0.28;//0.28
 
-    public static final double kDownControllerP = 6;//7; //
+    public static final double kDownControllerP = 5.6;//7; //
     public static final double kDownControllerI = 0;
-    public static final double kDownControllerD = 0.175;//0.1;//0.35
+    public static final double kDownControllerD = 0.57;//0.175;//0.1;//0.35
      
-    public static final double kAllowedError = 0.75;
+    public static final double kAllowedError = 1;
 
     public static final double kFeedForwardS = (0.95 - 0.2)/2*0.8;   /* kG too high - kG too low / 2  0.95, 0.2 */
     public static final double kFeedForwardG = (0.95 + 0.2)/2;  /* kG too high + kG too low / 2 */    // calculated value 0.6
-    public static final double kFeedForwardV = 0.06;   // calculated value 0.12
+    public static final double kFeedForwardV = 0.12;   // calculated value 0.12
 
     public static final double kMaxVelocity = 150.0;    // 120 inches per second (COOKING) calculated max is 184 in/s
     public static final double kMaxAcceleration = 240;    // 400 inches per second^2 (also COOKING) calculated max is 600 in/s^2
@@ -74,27 +75,7 @@ public class ElevatorConstants {
             .idleMode(kIdleMode)
             .inverted(true);
         motorConfig.encoder
-            .positionConversionFactor(kEncoderConversionFactor)
-            .velocityConversionFactor(kEncoderConversionFactor);
-        /*motorConfig.closedLoop
-            .p(kPositionControllerP)
-            .i(kPositionControllerI)
-            .d(kPositionControllerD)
-            .velocityFF(0.0); // keep at zero for position pid
-        motorConfig.closedLoop.maxMotion
-            .maxAcceleration(kMaxAcceleration)
-            .maxVelocity(kMaxVelocity)
-            .allowedClosedLoopError(kAllowedError);*/
-    }
-
-    public static final SparkMaxConfig motorConfig2 = new SparkMaxConfig();
-
-    static {
-        motorConfig2
-            .smartCurrentLimit(kCurrentLimit)
-            .idleMode(kIdleMode)
-            .inverted(false);
-        motorConfig.encoder
-            .positionConversionFactor(kEncoderConversionFactor);  
+            .positionConversionFactor(kEncoderPositionConversionFactor)
+            .velocityConversionFactor(kEncoderVelocityConversionFactor);
     }
 }

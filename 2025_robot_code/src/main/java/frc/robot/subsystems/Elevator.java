@@ -29,6 +29,8 @@ public class Elevator extends SubsystemBase {
     private ProfiledPIDController pidControllerDown;
 
     private ElevatorFeedforward feedForward;
+
+    private double currentPIDOut;
     
     public Elevator() {
         elevatorMotor1 = new SparkMax(
@@ -52,8 +54,6 @@ public class Elevator extends SubsystemBase {
             ResetMode.kResetSafeParameters, 
             PersistMode.kPersistParameters
         );
-
-        //elevatorClosedLoop = elevatorMotor1.getClosedLoopController();
 
         encoder = elevatorMotor1.getEncoder();
 
@@ -170,15 +170,25 @@ public class Elevator extends SubsystemBase {
             ElevatorConstants.kMaxHeight
         );
 
+        pidControllerDown.setGoal(clampedSetpoint);
+
         return run(() -> {
-            //pidController.reset(encoder.getPosition(), encoder.getVelocity());
-            elevatorMotor1.setVoltage(
-                pidControllerUp.calculate(
+            //pidControllerUp.reset(encoder.getPosition(), encoder.getVelocity());
+
+            if(!pidControllerDown.atGoal()){
+                currentPIDOut = pidControllerDown.calculate(
                     encoder.getPosition(),
                     clampedSetpoint
-                ) + feedForward.calculate(pidControllerUp.getSetpoint().velocity)
+                );
+                System.out.println("CALCULATED");
+            }else{
+                currentPIDOut = 0;
+                System.out.println("SET ZERO");
+            }
+
+            elevatorMotor1.setVoltage(
+                currentPIDOut + feedForward.calculate(pidControllerDown.getSetpoint().velocity)
             );
-            
         });
 
     }
@@ -236,5 +246,9 @@ public class Elevator extends SubsystemBase {
      */
     public double getMotor2() {
         return elevatorMotor2.getAppliedOutput()*elevatorMotor2.getBusVoltage();
+    }
+
+    public double currentPIDOut(){
+        return currentPIDOut;
     }
 }

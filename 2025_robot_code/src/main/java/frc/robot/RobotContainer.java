@@ -15,6 +15,7 @@ import frc.robot.subsystems.ClimberRollers;
 import frc.robot.subsystems.Drivetrain;
 import frc.robot.subsystems.Elevator;
 import frc.robot.subsystems.Manipulator;
+import frc.robot.subsystems.sysid.ElevatorSysID;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
@@ -30,6 +31,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 
 public class RobotContainer {
 	private ClimberPivot climberPivot;
@@ -108,8 +110,8 @@ public class RobotContainer {
 		);
 
 		elevator.setDefaultCommand(
-			elevator.runManualElevator(
-				() -> -operator.getLeftY() * .5
+			elevator.goToSetpoint(
+				() -> 0
 			)
 		);
 
@@ -144,23 +146,21 @@ public class RobotContainer {
 		driver.start().and(driver.back()).onTrue(
 			startingConfig()
 		);
-
+		*/
 		driver.povDown().whileTrue(climberPivot.runPivot(-0.5));
 		driver.povUp().whileTrue(climberPivot.runPivot(0.5));
 
 		driver.povLeft().whileTrue(climberRollers.runRoller(0.5));
 		driver.povRight().whileTrue(climberRollers.runRoller(-0.5));
-		*/
-
-		operator.povUp().onTrue(
-			elevator.goToSetpoint(() -> 20).until(elevator::eitherAtGoal)
+		
+		
+		operator.povUp().whileTrue(
+			elevator.goToSetpoint(() -> 50)
 		);
 
-		operator.povDown().onTrue(
-			elevator.goToSetpoint(() -> 0).until(elevator::eitherAtGoal)
+		operator.povDown().whileTrue(
+			elevator.goToSetpoint(() -> 0)
 		);
-
-		operator.a().whileTrue(elevator.maintainPosition());
 
 		/*
 		operator.a().whileTrue(elevator.runManualElevator(() -> 0.2));
@@ -231,7 +231,7 @@ public class RobotContainer {
 		sensorTab.addDouble("Elevator Position", elevator::getEncoderPosition)
 			.withSize(2, 1)
 			.withPosition(0, 0)
-			.withWidget(BuiltInWidgets.kTextView);
+			.withWidget(BuiltInWidgets.kGraph);
 
 		sensorTab.addDouble("Manipulator Position", manipulatorPivot::getEncoderPosition)
 			.withSize(2, 1)
@@ -258,9 +258,14 @@ public class RobotContainer {
 			.withPosition(4, 1)
 			.withWidget(BuiltInWidgets.kBooleanBox);
 
-		sensorTab.addDouble("ElevMotor1", elevator::getMotor1);
+		sensorTab.addDouble("ElevMotor1", elevator::getMotor1)
+			.withWidget(BuiltInWidgets.kGraph);
 
-		sensorTab.addDouble("ElevMotor2", elevator::getMotor2);
+		sensorTab.addDouble("ElevMotor2", elevator::getMotor2)
+			.withWidget(BuiltInWidgets.kGraph);
+
+		sensorTab.addDouble("PID output", elevator::currentPIDOut)
+		.withWidget(BuiltInWidgets.kGraph);
  	}
 
 	public Command getAutonomousCommand() {
